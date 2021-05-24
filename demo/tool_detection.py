@@ -33,13 +33,34 @@ train_val_split = {
     'train': [csv_files[i] for i in train_inds],
     'val': [csv_files[i] for i in val_inds]
 }
-train_dataset_dicts = get_iMerit_dicts(surgical_tool_path,
+train_iMerit_dataset = get_iMerit_dicts(surgical_tool_path,
                                        train_val_split['train'])
-val_dataset_dicts = get_iMerit_dicts(surgical_tool_path,
+data_dir = '/home/mona/share/data/m2cai16-tool-locations/'
+image_list_path = '/home/mona/share/data/m2cai16-tool-locations/ImageSets/Main/train.txt'
+train_m2cai16_dataset = get_m2cai16_dict(data_dir, image_list_path)
+train_dataset_dicts = []
+train_dataset_dicts.extend(train_iMerit_dataset)
+train_dataset_dicts.extend(train_m2cai16_dataset)
+print(f'len m2cai16 {len(train_m2cai16_dataset)}, len-iMerit: {len(train_iMerit_dataset)}')
+
+
+val_iMerit_dataset= get_iMerit_dicts(surgical_tool_path,
                                      train_val_split['val'])
+
+
+image_list_path = '/home/mona/share/data/m2cai16-tool-locations/ImageSets/Main/val.txt'
+val_m2cai16_dataset = get_m2cai16_dict(data_dir, image_list_path)
+val_dataset_dicts = []
+val_dataset_dicts.extend(val_iMerit_dataset)
+val_dataset_dicts.extend(val_m2cai16_dataset)
+print(f'len m2cai16 {len(val_m2cai16_dataset)}, len-iMerit: {len(val_iMerit_dataset)}')
 print(
     f'len-train: {len(train_dataset_dicts)}, len_val: {len(val_dataset_dicts)}'
 )
+
+# shuffle
+np.random.shuffle(train_dataset_dicts)
+np.random.shuffle(val_dataset_dicts)
 
 for d in ["train", "val"]:
     dataset_name = "tool_" + d

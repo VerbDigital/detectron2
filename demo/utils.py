@@ -1,6 +1,7 @@
 import boto3, os, json
 import cv2, glob
 import numpy as np
+import xml.etree.ElementTree as ET
 import pandas as pd
 from detectron2.structures import BoxMode
 import matplotlib.pyplot as plt
@@ -10,6 +11,52 @@ def cv2_imshow(img):
     plt.figure(figsize=[15, 10])
     plt.imshow(img[:, :, ::-1])
     plt.show()
+
+def convert_xml_annot(annot_path):
+    objs = []
+    tree = ET.parse(annot_path)
+    root = tree.getroot()
+    for idx,log_element in enumerate(root.findall('object/bndbox')):
+        xmin = int(log_element.findall('xmin')[0].text)
+        xmax = int(log_element.findall('xmax')[0].text)
+        ymin = int(log_element.findall('ymin')[0].text)
+        ymax = int(log_element.findall('ymax')[0].text)
+        # bbox.append([xmin, ymin, xmax, ymax])
+        obj = {
+            "bbox": [
+                xmin, ymin,
+                xmax,ymax],
+            "bbox_mode":
+                BoxMode.XYXY_ABS,
+            "category_id":
+                0,
+        }
+        objs.append(obj)
+    return objs
+
+
+def get_m2cai16_dict(data_dir, image_list_path):
+    with open(image_list_path, 'r') as f:
+        img_list = f.readlines()
+    img_list = [x.strip() for x in img_list]
+    dataset_dicts = []
+    for ind in range(len(img_list)):
+        record = dict()
+        img_path = os.path.join(data_dir, 'JPEGImages/', img_list[ind] + '.jpg')
+        image = cv2.imread(img_path)
+        annot_path = os.path.join(data_dir, 'Annotations/', img_list[ind] + '.xml')
+        bboxs = convert_xml_annot(annot_path)
+        record["file_name"] = img_path
+        record["annotations"] = bboxs
+        height, width = image.shape[:2]
+        record["image_id"] = ind
+        record["height"] = height
+        record["width"] = width
+        dataset_dicts.append(record)
+    return dataset_dicts
+
+
+
 
 
 def get_iMerit_dicts(data_dir, csv_files, bucket_name="ai-appen-projects"):
@@ -73,3 +120,18 @@ def get_iMerit_dicts(data_dir, csv_files, bucket_name="ai-appen-projects"):
             dataset_dicts.append(record)
     print(f'number of wrong annotation: {no_wrong_annot}')
     return dataset_dicts
+
+if __name__ == '__main__':
+    data_dir = '/home/mona/share/data/m2cai16-tool-locations/'
+    image_list_path = '/home/mona/share/data/m2cai16-tool-locations/ImageSets/Main/val.txt'
+    datasets = get_m2cai16_dict(data_dir, image_list_path)
+    record = datasets[10]
+    img = cv2.imread(record['file_name'])
+    objs =  record["annotations"]
+    for i in range(len(objs)):
+        obj = objs[i]['bbox']
+        img = cv2.rectangle(img, (obj[0], obj[1]), (obj[2], obj[3]), (255, 0, 0), 2)
+    plt.imshow(img[:,:,::-1])
+    plt.show()
+
+
