@@ -14,25 +14,20 @@ surgical_tool_path = "/home/mona/share/data/score/annotation/appen_new_annot"
 
 csv_files = glob.glob(surgical_tool_path + '/*.csv')
 N = len(csv_files)
-val_inds = np.random.choice(N, N // 4)
+val_inds = np.random.choice(N, N // 3)
 train_inds = np.setdiff1d(np.arange(N), val_inds)
 train_val_split = {
     'train': [csv_files[i] for i in train_inds],
     'val': [csv_files[i] for i in val_inds]
 }
-train_dataset_dicts = get_iMerit_dicts(surgical_tool_path,
-                                       train_val_split['train'])
-val_dataset_dicts = get_iMerit_dicts(surgical_tool_path,
-                                     train_val_split['val'])
-print(
-    f'len-train: {len(train_dataset_dicts)}, len_val: {len(val_dataset_dicts)}'
-)
 
-for d in ["train", "val"]:
+m2cai_data_dir = '/home/mona/share/data/m2cai16-tool-locations'
+
+for d in ["val"]:
     dataset_name = "tool_" + d
     DatasetCatalog.register(
         dataset_name,
-        lambda d=d: get_iMerit_dicts(surgical_tool_path, train_val_split[d]))
+        lambda d=d: create_dataset(surgical_tool_path, train_val_split[d], m2cai_data_dir, f'{d}.txt'))
     MetadataCatalog.get(dataset_name).set(thing_classes=["tool"])
 
 cfg = get_cfg()
@@ -45,7 +40,7 @@ cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
 cfg.DATASETS.TEST = ('tool_val', )
 cfg.DATALOADER.NUM_WORKERS = 2
 # cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")  # Let training initialize from model zoo
-cfg.SOLVER.IMS_PER_BATCH = 4
+cfg.SOLVER.IMS_PER_BATCH = 2
 cfg.SOLVER.MAX_ITER = 50  # 300 iterations seems good enough for this toy dataset; you will need to train longer for a practical dataset
 cfg.SOLVER.STEPS = []  # do not decay learning rate
 cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
