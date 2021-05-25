@@ -35,7 +35,8 @@ def convert_xml_annot(annot_path):
     return objs
 
 
-def get_m2cai16_dict(data_dir, image_list_path):
+def get_m2cai16_dict(data_dir, image_list_filename):
+    image_list_path = os.path.join(data_dir, 'ImageSets/Main/', image_list_filename)
     with open(image_list_path, 'r') as f:
         img_list = f.readlines()
     img_list = [x.strip() for x in img_list]
@@ -57,7 +58,14 @@ def get_m2cai16_dict(data_dir, image_list_path):
 
 
 
-
+def create_dataset(iMrit_data_dir, iMerit_csv_files, m2cai_data_dir, m2cai_image_list_path):
+    iMerit_dataset = get_iMerit_dicts(iMrit_data_dir, iMerit_csv_files)
+    m2cai_dataset = get_m2cai16_dict(m2cai_data_dir, m2cai_image_list_path)
+    dataset_dicts = []
+    dataset_dicts.extend(iMerit_dataset)
+    dataset_dicts.extend(m2cai_dataset)
+    print(f'm2cai: {len(m2cai_dataset)}, iMerit_dataset: {len(iMerit_dataset)}, total: {len(dataset_dicts)}')
+    return dataset_dicts
 
 def get_iMerit_dicts(data_dir, csv_files, bucket_name="ai-appen-projects"):
     offset = 5
